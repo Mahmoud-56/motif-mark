@@ -1,181 +1,76 @@
 #!/usr/bin/env python 
 
-import argparse 
-import cairo 
+import argparse
+import cairo
 import os
 import re
-
-
-
-
-# class ParseFasta():
-
-#     def __init__(self, file_path):
-#         with open(file_path, 'r') as file:
-#             lines = file.readlines()
-#             self.gene = lines[0].split(" ")[0].strip(">")
-#             self.seq = "".join([line.strip('\n') for line in lines if not line.startswith(">")])
-#             self.seq_length = len(self.seq) 
-
-#     def find_exon_positions(self):
-#         exon_st = None
-#         exons = []  # List to store exon (start, end) tuples
-#         in_exon = False
-
-#         for i, ch in enumerate(self.seq):
-#             if ch.isupper():
-#                 if not in_exon:  # If we're not already in an exon, this is a new exon start
-#                     exon_st = i + 1  # 1-based index
-#                     in_exon = True
-#                 exon_end = i + 1
-#             else:  # Found a lowercase character (intron)
-#                 if in_exon:  # The exon ends here
-#                     exons.append((exon_st, exon_end))
-#                     in_exon = False  # Reset the flag
-
-#         # If sequence ends while still in an exon, append the last exon
-#         if in_exon:
-#             exons.append((exon_st, exon_end))
-
-#         return exons
-
-#     def find_motifs(self, motifs):
-#         motif_positions = {}
-#         for motif in motifs:
-#             matches = []
-#         # Loop through the sequence with a sliding window of motif length
-#         for i in range(len(self.seq) - len(motif) + 1):
-#             if re.match(motif, self.seq[i:i+len(motif)], re.IGNORECASE):
-#                 matches.append((i + 1, i + len(motif) + 1))
-#         motif_positions[motif] = matches
-#         return motif_positions
-                    
-# class ParseMotif: 
-#     def __init__(self, file_path):
-#         with open(file_path, 'r') as file:
-#             self.motifs = [line.strip() for line in file.readlines()]
-
-#     def translate_motifs(self):
-#         translated_motifs = []
-#         for motif in self.motifs:
-#             translated_motif = ""
-#             for ch in motif:
-#                 if ch in iupac_dict:
-#                     translated_motif += iupac_dict[ch]
-#                 else:
-#                     raise ValueError(f"Invalid IUPAC code: {ch}")
-#             translated_motifs.append(translated_motif)
-#         return translated_motifs
-
-#     def draw_visualization(fasta_parser, exons, motif_positions, output_file="Figure_1.png"):
-#     # Canvas setup
-#         width, height = 800, 200
-#         surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
-#         ctx = cairo.Context(surface)
-
-#     # Scaling factor
-#         scale = width / fasta_parser.seq_length
-
-#     # Draw the full sequence as a thin line (introns)
-#         ctx.set_source_rgb(0.5, 0.5, 0.5)  # Gray for introns
-#         ctx.set_line_width(1)
-#         ctx.move_to(0, height // 2)
-#         ctx.line_to(width, height // 2)
-#         ctx.stroke()
-
-#     # Draw exons as black filled rectangles
-#         ctx.set_source_rgb(0.0, 0.0, 0.0)  # Black for exons
-#         for start, end in exons:
-#             exon_start = (start - 1) * scale  # Convert to 0-based pixel coordinates
-#             exon_length = (end - start + 1) * scale
-#             ctx.rectangle(exon_start, height // 2 - 10, exon_length, 20)  # Height of 20 pixels
-#             ctx.fill()
-
-#     # Draw motifs (unique colors, overlaid on sequence/exons)
-#         motif_colors = {
-#             motif: (i / len(motif_positions), 0, 1 - i / len(motif_positions))  # Simple color gradient
-#             for i, motif in enumerate(motif_positions.keys())
-#         }
-#         for motif, positions in motif_positions.items():
-#             ctx.set_source_rgb(*motif_colors[motif])
-#             for start, end in positions:
-#                 motif_start = (start - 1) * scale
-#                 motif_length = (end - start + 1) * scale
-#                 ctx.rectangle(motif_start, height // 2 - 5, motif_length, 10)  # Slightly smaller height
-#                 ctx.fill()
-
-#         # Save to file
-#         surface.write_to_png(output_file)
-#         print(f"Visualization saved as {output_file}")
-
-
-
-# def main():
-#     args = get_args()
-#     motif_parser = ParseMotif(args.m)
-#     translated_motifs = motif_parser.translate_motifs()
-#     fasta_parser = ParseFasta(args.f)
-#     exons = fasta_parser.find_exon_positions()
-#     motif_positions = fasta_parser.find_motifs(translated_motifs)
-#     draw_visualization(fasta_parser, exons, motif_positions)
-
-# if __name__ == "__main__":
-#     main()
-
-
-
-
+from collections import defaultdict
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description="Identify and count specific motifs given a FASTA file < 1000 bp")
-    parser.add_argument("-f", help="FASTA file containing motifs, exons are capitalized", required=True, type=str)
-    parser.add_argument("-m", help="Motif file containing motifs to search for, one motif per line", required=True, type=str)
+    parser = argparse.ArgumentParser(description="Identify and visualize motifs in a FASTA files with multiple genes")
+    parser.add_argument("-f", help="FASTA file containing exons capitalizes and introns as lowercase", required=True, type=str)
+    parser.add_argument("-m", help="Motif file with one motif per line", required=True, type=str)
     return parser.parse_args()
 
 
-# Keys are nucleotides codes and values are possible bases
 
-iupac_dict = {"A":'[Aa]',"C":'[Cc]',"G":'[Gg]',"T":'[TUtu]',"U":'[TUtu]',"R":'[AGag]',"Y":'[CTct]',"S":'[GCgc]',"W":'[ATat]',"K":'[GTgt]'
-            ,"M":'[ACac]',"B":'[CGTcgt]',"D":'[AGTagt]',"H":'[ACTact]',"V":'[ACGacg]',"N":'[AaCcTtUuGg]',"a":'[Aa]',"c":'[Cc]',"g":'[Gg]'
-            ,"t":'[TUtu]',"u":'[TUtu]',"r":'[AGag]',"y":'[CTct]',"s":'[GCgc]',"w":'[ATat]',"k":'[GTgt]',"m":'[ACac]',"b":'[CGTcgt]'
-            ,"d":'[AGTagt]',"h":'[ACTact]',"v":'[ACGacg]',"n":'[AaCcTtUuGg]'}
+
+# IUPAC codes for motif expansion
+iupac_dict = {
+    "A": '[Aa]', "C": '[Cc]', "G": '[Gg]', "T": '[TUtu]', "U": '[TUtu]',
+    "R": '[AGag]', "Y": '[CTct]', "S": '[GCgc]', "W": '[ATat]', "K": '[GTgt]',
+    "M": '[ACac]', "B": '[CGTcgt]', "D": '[AGTagt]', "H": '[ACTact]', "V": '[ACGacg]', "N": '[AaCcTtUuGg]'
+}
 
 class ParseFasta:
     def __init__(self, file_path):
         with open(file_path, 'r') as file:
             lines = file.readlines()
-            self.gene = lines[0].split(" ")[0].strip(">")
-            self.seq = "".join([line.strip('\n') for line in lines if not line.startswith(">")])
-            self.seq_length = len(self.seq)
+            self.gene = lines[0].split(" ")[0].strip(">") #extract the gene 
+            self.seq = "".join(line.strip() for line in lines if not line.startswith(">")) #extract the seq
+            self.seq_length = len(self.seq) #extract the seq length 
 
     def find_exon_positions(self):
-        exon_st = None
+        """Identify exon start and end positions based on uppercase sequences."""
         exons = []
-        in_exon = False
+        exon_start = None
+        in_exon = False #starting in an intron
+
         for i, ch in enumerate(self.seq):
             if ch.isupper():
-                if not in_exon:
-                    exon_st = i + 1
+                if not in_exon: #new exon start 
+                    exon_start = i + 1  # 1-based index
                     in_exon = True
                 exon_end = i + 1
-            else:
+            else: #lower case letter 
                 if in_exon:
-                    exons.append((exon_st, exon_end))
-                    in_exon = False
+                    exons.append((exon_start, exon_end))
+                    in_exon = False #reset the flag
         if in_exon:
-            exons.append((exon_st, exon_end))
+            exons.append((exon_start, exon_end))
+
         return exons
 
-    def find_motifs(self, motifs):
-        motif_positions = {}
-        for motif in motifs:
-            matches = []
-            for i in range(len(self.seq) - len(motif) + 1):
-                if re.match(motif, self.seq[i:i+len(motif)]):
-                    matches.append((i + 1, i + len(motif) + 1))
-            motif_positions[motif] = matches
+    def find_motifs(self, motifs_dict):
+        """
+        Find motif positions in the sequence using regex from translated IUPAC motifs.
+
+        Input:
+            original motif dict where keys are motifs and values are respective regex expressions
+
+        Output:
+            a dictionary where keys are original motifs, and values are start and end positions.
+
+        """
+
+        motif_positions = defaultdict(list) # the default value for any new key is an empty list 
+        for orig_motif, regex in motifs_dict.items():
+            for match in re.finditer(regex, self.seq, re.IGNORECASE):
+                motif_positions[orig_motif].append((match.start() + 1, match.end()))
+
         return motif_positions
+
 
 class ParseMotif:
     def __init__(self, file_path):
@@ -183,79 +78,103 @@ class ParseMotif:
             self.motifs = [line.strip() for line in file.readlines()]
 
     def translate_motifs(self):
-        translated_motifs = []
+        """Convert IUPAC motifs to regex while keeping original motifs for legends."""
+        translated_motifs = {}
         for motif in self.motifs:
-            translated_motif = ""
             for ch in motif:
-                if ch in iupac_dict:
-                    translated_motif += iupac_dict[ch]
-                else:
-                    raise ValueError(f"Invalid IUPAC code: {ch}")
-            translated_motifs.append(translated_motif)
+                regex = "".join(iupac_dict.get(ch,ch)) #if value not found add the original motif
+                translated_motifs[motif] = regex  # Store original motif as key, regex as value
         return translated_motifs
 
-def draw_visualization(fasta_parser, exons, motif_positions, output_file="Figure_1.png"):
-    # Canvas setup: Increased width for legend
-    total_width, height = 1000, 200  # 800 for sequence, 200 for legend
+def draw_visualization(fasta_parser, motifs_dict, output_file="Figure_1.png"):
+    """Draws a single image with multiple genes, labeled, with motifs and exons."""
+    
+    # Constants for drawing
     sequence_width = 800
-    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, total_width, height)
+    gene_spacing = 100
+    legend_width = 200
+    image_width = sequence_width + legend_width
+    image_height = len(fasta_parser) * gene_spacing + 100
+
+    # Create surface and context
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, image_width, image_height)
     ctx = cairo.Context(surface)
-    scale = sequence_width / fasta_parser.seq_length
 
-    # Draw the full sequence as a gray line (introns)
-    ctx.set_source_rgb(0.5, 0.5, 0.5)  # Gray for introns
-    ctx.set_line_width(1)
-    ctx.move_to(0, height // 2)
-    ctx.line_to(sequence_width, height // 2)
-    ctx.stroke()
+    # Set background to white
+    ctx.set_source_rgb(1.0, 1.0, 1.0)
+    ctx.paint()
 
-    # Draw exons as black filled rectangles
-    ctx.set_source_rgb(0.0, 0.0, 0.0)  # Black for exons
-    for start, end in exons:
-        exon_start = (start - 1) * scale
+    # Assign colors to motifs
+    motif_colors = {motif: (i / len(motifs_dict), 0, 1 - i / len(motifs_dict))
+                    for i, motif in enumerate(motifs_dict.keys())}
+
+    # Draw each gene
+    for i, fasta_parser in enumerate(fasta_parser):
+        y_offset = i * gene_spacing + 50
+        scale = sequence_width / fasta_parser.seq_length
+
+        # Draw gene name
+        ctx.set_source_rgb(0, 0, 0)
+        ctx.move_to(10, y_offset + 5)
+        ctx.show_text(fasta_parser.gene)
+        ctx.stroke()
+
+    # Draw intron line
+        ctx.set_source_rgb(0, 0, 0)
+        ctx.set_line_width(1)
+        ctx.move_to(50, y_offset)
+        ctx.line_to(50 + sequence_width, y_offset)
+        ctx.stroke()
+
+    # Draw exons
+    for start, end in fasta_parser.find_exon_positions():
+        exon_start = 50 + (start - 1) * scale
         exon_length = (end - start + 1) * scale
-        ctx.rectangle(exon_start, height // 2 - 10, exon_length, 20)
+        ctx.rectangle(exon_start, y_offset - 10, exon_length, 20)
         ctx.fill()
 
-    # Draw motifs as vertical ticks above the sequence
-    motif_colors = {motif: (i / len(motif_positions), 0, 1 - i / len(motif_positions)) 
-                    for i, motif in enumerate(motif_positions.keys())}
-    ctx.set_line_width(2)  # Thicker lines for visibility
-    for motif, positions in motif_positions.items():
-        ctx.set_source_rgb(*motif_colors[motif])
-        for start, _ in positions:  # Only use start position for tick
-            tick_x = (start - 1) * scale
-            ctx.move_to(tick_x, height // 2 - 20)  # Start above sequence
-            ctx.line_to(tick_x, height // 2 - 40)  # Extend upward
-            ctx.stroke()
+    # Draw motifs
+        ctx.set_line_width(2)
+        for motif, positions in fasta_parser.find_motifs(motifs_dict).items():
+            ctx.set_source_rgb(*motif_colors[motif])
+            for start, _ in positions:
+                tick_x = 50 + (start - 1) * scale
+                ctx.move_to(tick_x, y_offset - 20)
+                ctx.line_to(tick_x, y_offset + 20)
+                ctx.stroke()
 
-    # Draw legend on the right
-    legend_x = sequence_width + 20  # Start legend after sequence
-    legend_y = 20  # Start near top
+
+    # Draw legend
+    legend_x = sequence_width + 60
+    legend_y = 50
     ctx.set_font_size(12)
+
     for i, (motif, color) in enumerate(motif_colors.items()):
-        # Draw color square
         ctx.set_source_rgb(*color)
         ctx.rectangle(legend_x, legend_y + i * 20, 10, 10)
         ctx.fill()
-        # Draw motif text
-        ctx.set_source_rgb(0, 0, 0)  # Black text
+
+        ctx.set_source_rgb(0, 0, 0)
         ctx.move_to(legend_x + 15, legend_y + i * 20 + 10)
-        ctx.show_text(motif)  # Display the translated motif regex
+        ctx.show_text(motif)
         ctx.stroke()
 
-    # Save to file
+
+    # Save image
     surface.write_to_png(output_file)
     print(f"Visualization saved as {output_file}")
+
 
 def main():
     args = get_args()
     motif_parser = ParseMotif(args.m)
-    translated_motifs = motif_parser.translate_motifs()
-    fasta_parser = ParseFasta(args.f)
-    exons = fasta_parser.find_exon_positions()
-    motif_positions = fasta_parser.find_motifs(translated_motifs)
-    draw_visualization(fasta_parser, exons, motif_positions)
+    motifs_dict = motif_parser.translate_motifs()  # Dictionary {original motif: regex}
+
+    fasta_parser =ParseFasta(args.f)
+
+    draw_visualization(fasta_parser, motifs_dict, output_file="Figure_1.png")
 
 if __name__ == "__main__":
     main()
+
+
