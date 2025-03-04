@@ -166,7 +166,7 @@ def draw_visualization(fasta_parser, motifs_dict, output_file="Figure_1.png"):
     ctx.set_font_size(18)
     ctx.set_source_rgb(0, 0, 0)
     ctx.move_to(legend_x_start, legend_y - 10)
-    ctx.show_text("Legend:")
+    ctx.show_text("Motifs:")
 
     x_offset = legend_x_start + 80
     for motif, color in motif_colors.items():
