@@ -89,28 +89,32 @@ class ParseFasta:
         return motif_positions
 
 colors = [
-    (1, 0, 0),    # Red
-    (0, 0, 1),    # Blue
-    (0, 1, 0),    # Green
-    (1, 0.5, 0),  # Orange
-    (0.5, 0, 0.5),# Purple
-    (0, 0.5, 0.5),# Teal
-    (1, 0, 1),    # Magenta
-    (0, 1, 1),    # Cyan
-    (0.5, 0.5, 0) # Olive
+    (1, 0.5, 0),  
+    (0, 1, 1),   
+    (0.5, 0.8, 0.5),
+    (0, 0, 1),      
 ]
+#     (1, 0, 0),    # Red
+#     (0, 0, 1),    # Blue
+#     (0, 1, 0),    # Green
+#     (0.5, 0, 0.5),# Purple
+#     (0, 0.5, 0.5),# Teal
+#     (1, 0, 1),    # Magenta
+#     (0, 1, 1),    # Cyan
+#     (0.5, 0.5, 0) # Olive
+
 
 def draw_visualization(fasta_parser, motifs_dict, output_file="Figure_1.png"):
     """Draw a visualization of genes with exons, introns, and motifs."""
     sequence_width = 800
     gene_spacing = 100
-    legend_height = 100  # Reduce height for better spacing
+    legend_height = 100  
     image_width = sequence_width + 200
-    image_height = len(fasta_parser.genes) * gene_spacing + legend_height + 150  # Add extra padding
+    image_height = len(fasta_parser.genes) * gene_spacing + legend_height + 150  
 
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, image_width, image_height)
     ctx = cairo.Context(surface)
-    ctx.set_source_rgb(1.0, 1.0, 1.0)
+    ctx.set_source_rgb(0.8, 0.8, 0.8)
     ctx.paint()
 
     # Draw plot title
@@ -129,7 +133,7 @@ def draw_visualization(fasta_parser, motifs_dict, output_file="Figure_1.png"):
         # Adjust gene name position
         ctx.set_source_rgb(0, 0, 0)
         ctx.set_font_size(20)  
-        ctx.move_to(40, y_offset + 10)  # Move text slightly left and down
+        ctx.move_to(40, y_offset + 10)  
         ctx.show_text(gene_name)
 
         # Draw intron line
@@ -146,7 +150,7 @@ def draw_visualization(fasta_parser, motifs_dict, output_file="Figure_1.png"):
             ctx.fill()
 
         # Draw motifs
-        ctx.set_line_width(4)
+        ctx.set_line_width(2)
         for motif, positions in fasta_parser.find_motifs(seq, motifs_dict).items():
             ctx.set_source_rgb(*motif_colors[motif])
             for start, _ in positions:
