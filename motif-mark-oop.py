@@ -30,69 +30,6 @@ iupac_dict = {'A': '[Aa]', 'a': '[Aa]',
                'N': '[AaCcTtUuGg]', 'n': '[AaCcTtUuGg]'}
 
 
-
-# class ParseMotif:
-#     def __init__(self, file_path):
-#         with open(file_path, 'r') as file:
-#             self.motifs = [line.strip() for line in file.readlines()]
-
-#     def translate_motifs(self):
-#         """Convert IUPAC motifs to regex."""
-#         for ch in self.motifs:
-#             regex = ""
-#             regex += iupac_dict[ch]
-#             motifs_dict[chr] = regex
-#         return motifs_dict
-
-# class ParseFasta:
-#     def __init__(self, file_path):
-#         self.genes = []
-#         with open(file_path, 'r') as file:
-#             gene_name = None
-#             gene_seq = ""
-#             for line in file:
-#                 line = line.strip()
-#                 if line.startswith(">"):
-#                     if gene_name:
-#                         self.genes.append((gene_name, gene_seq))
-#                     gene_name = line[1:].split(" ")[0]
-#                     gene_seq = ""
-#                 else:
-#                     gene_seq += line
-#             if gene_name:
-#                 self.genes.append((gene_name, gene_seq))
-
-#     def get_genes(self):
-#         return self.genes
-
-#     def find_exon_positions(self, seq):
-#         """Identify exon start and end positions based on uppercase letters."""
-#         exons = []
-#         exon_start = None
-#         in_exon = False
-
-#         for i, ch in enumerate(seq):
-#             if ch.isupper():
-#                 if not in_exon:
-#                     exon_start = i + 1
-#                     in_exon = True
-#                 exon_end = i + 1
-#             else:
-#                 if in_exon:
-#                     exons.append((exon_start, exon_end))
-#                     in_exon = False
-#         if in_exon:
-#             exons.append((exon_start, exon_end))
-#         return exons
-
-#     def find_motifs(self, seq, motifs_dict):
-#         """Find motif positions in the sequence using regex."""
-#         motif_positions = defaultdict(list)
-#         for translated_motifs, regex in motifs_dict.items():
-#             for match in re.finditer(regex, seq, re.IGNORECASE):
-#                 motif_positions[translated_motifs].append((match.start() + 1, match.end()))
-#         return motif_positions
-
 class ParseMotif:
     def __init__(self, file_path):
         with open(file_path, 'r') as file:
